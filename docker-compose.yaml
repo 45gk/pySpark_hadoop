@@ -1,0 +1,53 @@
+version: '3'
+services:
+  # Настроим NameNode (HDFS)
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    networks:
+      - spark-network
+
+  # Настроим DataNode (HDFS)
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    environment:
+      - CLUSTER_NAME=test
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - SERVICE_PRECONDITION=namenode:9000
+    depends_on:
+      - namenode
+    networks:
+      - spark-network
+
+  # Spark Master + Jupyter (PySpark 3)
+  spark-pyspark:
+    image: jupyter/pyspark-notebook:spark-3.3.1
+    container_name: pyspark-lab
+    ports:
+      - "8888:8888"
+      - "4040:4040"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    volumes:
+      - ./work:/home/jovyan/work
+    networks:
+      - spark-network
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+
+networks:
+  spark-network:
+    driver: bridge
